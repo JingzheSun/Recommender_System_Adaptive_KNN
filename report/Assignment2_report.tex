@@ -1,0 +1,345 @@
+\documentclass[paper=a4, fontsize=11pt, twocolumn]{scrartcl} % A4 paper and 11pt font size
+
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+
+\usepackage{sectsty} % Allows customizing section commands
+\allsectionsfont{\centering \normalfont\scshape} % Make all sections centered, the default font and small caps
+
+\usepackage{fancyhdr} % Custom headers and footers
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+
+\numberwithin{equation}{section} % Number equations within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{figure}{section} % Number figures within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{table}{section} % Number tables within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage[colorlinks,linkcolor=blue]{hyperref}
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{	
+\normalfont \normalsize 
+\textsc{University of California, San Diego} \\ [25pt] % Your university, school and/or department name(s)
+\horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
+\huge Adaptive KNN Recommender \\ % The assignment title
+\horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
+}
+
+\author{Chen, Zexi\\Luo, Shihao\\Sun, Jingzhe}
+
+\date{\normalsize\today} % Today's date or a custom date
+
+\begin{document}
+
+\maketitle % Print the title
+
+\section{Introduction}
+
+The main goal of this project is to build a collaborative filter recommender system by implementing adaptive KNN algorithm. 
+
+\subsection{Data set} 
+In order to make sure our model works universally. More than one data set are chosen. First data set is the reviews of businesses from Google Local,which were used in assignment 1. The other data set is the meta information and reviews of Video Games from Amazon.\\
+\\
+The attributes in Google local review are:
+\begin{itemize}
+	\item businessID: The hashed ID of each unique business (eg.B660702032)
+	\item userID: The hashed ID of each unique user (eg.U342536218)
+	\item categories: A list of categories this business belongs to (eg.[Donut Shop, Dessert Shop, Bakery])
+	\item ratings: The star rating of the user's review (eg.4.0)
+\end{itemize}
+
+The attributes in Amazon video game meta information are:
+\begin{itemize}
+	\item asin: The hashed ID of each unique video game (eg.B00005O0I2)
+	\item categories: A list of categories this video game belongs to (eg.['Video Games', 'PC', 'Games'])
+	\item price: The unit price of each unique video game (eg.23.88)
+	\item salesRank: The rank of each unique game in all kinds of Video Games (eg. 22579)
+\end{itemize}
+
+For reviews of video games from Amazon data set, only two attributes will be made use of
+\begin{itemize}
+	\item asin: The hashed ID of each unique video game (eg.B00005O0I2)
+	\item reviewerID: The hashed ID of each unique reviewer (eg. A3EFSLEMHNPP6A)
+\end{itemize}
+
+We built an adjacency matrix based on the (user, item) pairs extracted from reviews. If the user reviewed this item, then the corresponding value in this matrix is 1, else is 0.
+
+
+\subsection{Motivation} 
+Based on features extracted from detailed information of Video Games(meta), such as price, platform in categories and salesRank, those feature-based models – logistic regression and SVM can be used to predict whether a particular video game is visited by a user or not. A part of the adjacency matrix extracted from Amazon data set can be used as labels to train the model and another part can be used to calculate the accuracy of prediction as test set.\\
+\\
+Since some features included in meta may not be that related to the visit labels, performance of those models will not be very good. Thus, the collaborative filter based on the data of reviews of video games from Amazon data set which computing similarities between items can also be applied.  
+
+\section{Predictive task}
+
+This task requires a binary output for each user-business pair, the model we have learning related to it are logistic regression, SVM etc. Thus, there are several ways to solve it.\\
+\\
+For convenience, we define $I, U$ to represent all items and users in training set, $S$ to be the data in training set, and 
+$$ I_u = \{i\in I:(u,i)\in S \} $$
+$$ U_i = \{u\in U:(u,i)\in S \} $$
+
+\subsection{Evaluation approach}
+
+To evaluate performances of those models, we choose to compute the accuracy of prediction of each model. First, extract visited (user, item) pairs from reviews of video games from Amazon data set. Then, by choosing those random generated (user, item) pairs which are not in visited pairs, we generate a negative labeled train set whose length is exactly equal to the positive labeled train set extracted directly from reviews. We combine these two train sets as a final train set. Test set will also be generated with the same method.
+
+\subsection{baseline: Most popular}
+
+The naive visit prediction provided in baseline just returns True if the business in question is popular, using a threshold of the 50th percentile of popularity (totalVisits/2).\\
+\\
+This only depends on the number of times a certain business showed up in training data without any bias on different user. This is for sure not a good classifier since different user may have different preference and the training data maybe just a small portion of the whole data.
+
+\subsection{baseline: Logistic Regression}
+
+Logistic regression is a method to convert a real valued expression into a probability and then train a classifier for prediction. The loss that need to be optimized is:
+
+$$l_\theta (y|X)=\sum_i -\log (1+e^{-X_i \cdot \theta }) +
+\sum_{y_i=0} - X_i \cdot \theta - \lambda ||\theta ||_2^2$$
+
+$X_i \cdot \theta$ should be maximized when label is positive and minimized when label is negative. Thus, by calculating the log-likelihood, computing the gradient and solving the problem with gradient ascent, we could achieve an appropriate model. The derivative is the following:
+
+$$\frac{\partial l}{\partial \theta _k}=
+\sum_i{{X_{ik}}(1-\sigma ({X_i}\cdot \theta )})+
+\sum_{{y_i}=0}{-{X_{ik}}}-2\lambda {\theta_k} $$
+
+Considering the attributes of Amazon video game, features selected for the logistic regression include the platforms, the price and the sales ranking of the video game.
+
+\begin{multline*}
+visited = \Theta\times[1, VGA, PC, Linux, Mac, \\
+Nintendo, PlayStation, Sony PSP, Wii,\\
+Xbox, price/10,salesrank]
+\end{multline*}
+
+
+\subsection{baseline: SVM}
+Since the logistic regressors didn’t optimize the number of mistakes, and we want to minimize the number of misclassification, and SVM will fix the issue.
+
+$$\arg {{\min }_{\theta }}\sum_{i}{\delta ({{y}_{i}}({{X}_{i}}\cdot \theta -\alpha )}\le 0)$$
+
+Compared to logistic regression, SVM is trying to find a perfect classifier and the soft-margin formulation is used to figure out the classifier that maximizes the distance to the nearest points. In practical, features selected for the SVM is exactly same as that in logistic regression.
+
+\subsection{BPR}
+
+Instead of using the feature-based models, it is an alternate way to use a collaborative filter. The section below will talking about a model called Bayesian Personalized Ranking (BPR). 
+
+\section{One class recommender}
+
+Instead of predict directly if a user will visit a business, one class recommender tried to rank the businesses in training set for each user by maximizing a positive loss:
+$$max(\ln\sigma(x_{ui} - x_{uj})-\lambda_\Theta ||\Theta||^2)$$
+where $(u,i,j)\in D_s$ is a random triple that $i\in I_u and j\notin I_u$, $\lambda_\Theta$ is the regularizer for parameters.\\
+\\
+In order to maximized the positive loss, we need to use stochastic gradient descent and apply many triples (might be overfitting). The stochastic gradient descent formula is:
+
+$$\Theta\leftarrow\Theta + \alpha \left( 
+\frac{e^{-x_{uij}}}{1+e^{-x_{uij}}} \cdot
+\frac{\partial}{\partial\Theta}x_{uij} + \lambda_\Theta\Theta
+\right)$$
+
+With the update rule above the bpr procedure can be represented by following pseudocode.
+
+\begin{algorithm}
+  \caption{BPR($D_s, \Theta$)}
+  \label{alg1}
+  \begin{algorithmic}
+  \STATE initialize $\Theta$
+  \WHILE{not converge}
+  \STATE draw $(u,i,j)$ from $D_s$
+  
+  \STATE $\Theta\leftarrow\Theta + \alpha \left( 
+\frac{e^{-x_{uij}}}{1+e^{-x_{uij}}} \cdot
+\frac{\partial}{\partial\Theta}x_{uij} + \lambda_\Theta\Theta
+\right)$
+  \ENDWHILE
+  \STATE return $\Theta$
+  \end{algorithmic}
+\end{algorithm}
+
+There are two major way to represent $x_{uij}$ [1]. 
+\begin{itemize}
+	\item BPR-MF: It is a good idea to represent the adjacency matrix to a product of two low-rank matrices. SVD was a solution to decomposition, while a better way is to draw samples and train these two matrices. There are several libraries implemented with this method, so instead, we worked on the other approach.
+	\item BPR-KNN: It is also a good way to find the correlation matrix over all items, based on which we can cluster them in groups, and that can be use to rank items for a specific user.
+\end{itemize}
+
+\subsection{BPR-MF}
+
+By using the matrix factorization method, $x_{ui}$ can be represented by product of two matrices $\gamma_u\times\gamma_i$ that $\gamma_u\in R^{|U|\times K}$ and $\gamma_i\in R^{|I|\times K}$, where K is the dimension of latent factors, in which case, the partial derivative:
+
+$$\frac{\partial}{\partial\theta}x_{uij}=\begin{cases}
+(\gamma_i-\gamma_j)& \theta=\gamma_u\\
+\gamma_u& \theta=\gamma_i\\
+-\gamma_u& \theta=\gamma_j\\
+0& else
+\end{cases}$$
+
+and $\alpha$ is the learning rate that we need to adjust. While ranking, for each user $u$, $\gamma_u(u) \times \gamma_i$ will return a list of scores with size $|I|$, where each entry in result represent the score for an item. Then a simple sorting can complete the ranking task.\\
+\\
+As mentioned above, this predictor will return a list of scores that indicate preference on all businesses for each user. The last step for prediction visit/unvisit task is selecting a threshold among scores to separate them(eg. median will predict 1 for half of items and 0 for the other half).\\
+\\
+The threshold we used is based on the training data for each user. Find the minimum of all scores of items the user has visited in training set, and minus a offset:
+$$threshold_u = min\left( 
+S_{u,i}\text{ for }i \in I_u
+\right)-\text{offset}$$
+where the offset we chose is 0.5.\\
+\\
+This classifier can be a good predictor since it only consider how different a user would treat a business from another. And of course it also depends on other parameters $K,\lambda_u,\lambda_i,\lambda_j\alpha$, threshold, convergence condition etc.
+
+
+\subsection{BPR-KNN}
+
+Instead of matrix decomposition, $x_{ui}$ can also be represented by a likelihood that $u$ will visit $i$ (ie. summing the correlation between $i$ with all item $u$ has visited)
+
+$$x_{ui} = \sum_{l\in I_u}c_{il}$$
+
+where $C:I\times I$ is the symmetric item-correlation matrix, or, use K highest correlation in $I_u$.
+
+$$x_{ui} = \sum_{l\in I_u}\text{K highest }c_{il}$$
+
+Thus, for adaptive-KNN, $\Theta = C$. For convenience, the diagonal of correlation matrix are all 0. A common representation of $C$ can be computed by item-cosine similarity.
+ 
+$$c_{ij} = \frac{|U_i|\cap |U_j|}{\sqrt{|U_i|\cdot |U_j|}}$$
+
+While a better approach is to train their correlation by the algorithm mentioned above. Again the partial derivative of $x_{uij}$ will be:
+
+$$\frac{\partial}{\partial\theta}x_{uij}=\begin{cases}
++1& \theta\in \{c_{il},c_{li}\}\wedge l\in I_u\wedge i\not= l\\
+-1& \theta\in \{c_{jl},c_{lj}\}\wedge l\in I_u\wedge j\not= l\\
+0& else
+\end{cases}$$
+
+While ranking, for each user $u$ and item $i$, the score can be computed by summing up K-highest $c_{il}$ such that $l \in I_u$, then a list of scores with size $|I|$ can be computed. A sorting method can complete the ranking task.\\
+\\
+The prediction visit/unvisit task can also be accomplished by selecting a threshold among scores to separate them.\\
+\\
+The threshold we used is based on the training data for each user, or use a global percentile cutoff for all users (eg. 30\%).\\
+The result of this classifier would vary a lot with parameters 
+$K,\lambda_i,\lambda_j,\alpha$, threshold etc.
+
+
+\subsection{Strengths and Weaknesses}
+
+Adaptive KNN of collaborative filtering are very popular recently. Meanwhile, it also has some flaws.\\
+\\\
+Strengths of Adaptive KNN:
+\begin{itemize}
+	\item Accurate prediction for users that have personalized preference.
+	\item Better solution for cold start problem: recommender system can work once a user start viewing. 
+	\item Convincing recommendation because history-based prediction.
+	\item Latent factors are easier to be extracted than features. 
+\end{itemize}
+
+Weaknesses of Adaptive KNN:
+\begin{itemize}
+	\item Slow, very slow, time-consuming.
+	\item Works bad for loose adjacency matrix.
+	\item Space consuming while number of items getting large.
+	\item Malicious review may lead to a wrong direction. 
+\end{itemize}
+
+
+\subsection{Issues}
+
+There were some issues need to be discussed during building this model:
+
+\begin{itemize}
+	\item There are lots of tricks can help save time (eg. use numpy array instead of list, user MapReduce instead of loop).
+	\item While optimizing, the mini-batch gradient descent[2] was used. It is hard to choose an appropriate batch size and epochs.
+	\item While initializing the correlation matrix, we have no idea what it should like, so the initial value may be very strange from it should be.  
+	\item The hardest part is adjusting parameters $\lambda_i,\lambda_j$ and $K$, those are the main factors affecting the final result.
+	\item As mentioned above, this model is very time-consuming while training, for which reason the parameters were adjusted under small epochs. Thus, the real accuracy with large epochs should be higher.
+\end{itemize}
+
+
+\section{literature}
+
+
+\subsection{Similar data sets}
+
+Data sets used to make predictions in this assignment are reviews of businesses from Google Local, detailed information of Video Games(meta) and reviews of Video Games from Amazon. There are many similar datasets have been studied such as Netflix Prize, which is an anonymized version of their movie rating dataset; it consists of 100 million ratings, done by 480,000 users. Furthermore, Jester dataset contains 4.1 million continuous ratings (-10.00 to +10.00) of 100 jokes from 73,421 users.
+
+\subsection{State-Of-The-Art}
+For recommender system, there are many popular models. For feature-based approach, we can use:\\
+Naive Bayes, which is simple to compute probability just by counting.\\
+SVM: fixes the “double counting” and try to find a hyperplane that minimizes the number of misclassification.\\
+Logistic Regression: optimizes the classification error rather than the likelihood. \\
+Collaborative filtering: make recommendation based on past user-item interaction, which has good performance for users and items with enough data. It, however, does not naturally handle new users and new items. Collaborative filtering is very popular among big companies. Amazon and Google news are all using it.
+
+\section{Conclusion}
+
+\subsection{Result Comparison}
+
+The test set was generated from Amazon video game data set, half of which have positive label(visit) and the other half have negative label(unvisit). The accuracy of each method are shown in Table 5.1.
+
+\begin{table}  
+\caption{Accuracy of each model}  
+\begin{tabular*}{7.2cm}{lll}  
+\hline  
+Model  & Accuracy & comment\\  
+\hline 
+Most Popular &  0.63491&\\   
+SVM & 0.74286 &\\  
+Logistic Regression& 0.783712 &\\  
+BPR-MF & 0.792077 &\\ 
+BPR-KNN & 0.74814 & K = 5\\  
+BPR-KNN & 0.73155 & K = 10\\  
+\hline  
+\end{tabular*}  
+\end{table}   
+
+The accuracy of BPR-MF of assignment 1 on Kaggle is above 0.85, this time the only difference is the epochs. Similarly, with appropriate parameters, the accuracy of BPR-KNN  should be much better.
+
+\subsection{Parameter discussion}
+
+Theoretically the parameters will vary between different data sets for this model, so only parameter of this specific data set will be discussed.
+
+\paragraph{$K$} It is indicating the size of group after clustering. A larger $K$ will result in low accuracy, while a small $K$ won't make any sense. The recommended $K$ for this data set is approximately between [5,20].
+
+\paragraph{$\lambda_i,\lambda_j$} This pair of parameters guarantees the model to be converging and prevent it from underdamping or overdamping. The reasonable value are about 0.03 and 0.003 respectively.
+
+\paragraph{learning rate} 0.1 should be a good learning rate(converging and not slowly).
+
+\paragraph{epochs} With appropriate parameters above, a larger epochs will result in a better accuracy, but again, it is very time-consuming. Thus, try not to use epochs over 100.
+
+\paragraph{batch size} Large batch size will take too much time, while small batch size may cause some bias. Hence, 500 is a acceptable batch size.
+
+\subsection{Summary}
+
+Since the goal of our team is to build a library, the parameters will not be main issue of this project although there are some default parameters. \\
+This item-based adaptive KNN is part of collaborative filtering. This model is very popular recent years(Amazon is using collaborative filtering). It will have high accuracy only with appropriate parameters. Otherwise, it still hold similar results as other feature-based models(eg. SVM). There is still some details need to be optimized, but overall it is successfully implemented. 
+
+\begin{thebibliography}{12}
+
+\bibitem{itemreference} Steffen Rendle, Christoph Freudenthaler, Zeno Gantner and Lars Schmidt-Thieme
+ {\em BPR: Bayesian Personalized Ranking from Implicit Feedback.}
+ {2009.}
+ 
+ 
+\bibitem{itemreference} Mu Li, Tong Zhang, Yuqiang Chen, Alexander J. Smola
+ {\em Efficient Mini-batch Training for Stochastic Optimization}
+ {2014.}
+
+\end{thebibliography}
+
+
+\appendix      
+\section*{Appendix A: First}
+\href{https://github.com/JingzheSun/Recommender_System_Adaptive_KNN}{GitHub Link to view code} or view\\
+\url{https://github.com/JingzheSun/Recommender_System_Adaptive_KNN}
+
+\end{document}
