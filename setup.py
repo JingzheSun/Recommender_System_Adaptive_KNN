@@ -7,7 +7,7 @@ setup(
     author='Sun',
     author_email='jis252@eng.ucsd.edu',
     url='https://github.com/JingzheSun/Recommender_System_Adaptive_KNN',
-    license='MIT',
+    license='Free',
     packages=['bpr_knn'],
     install_requires=[
         'numpy',

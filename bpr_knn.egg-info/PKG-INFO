@@ -1,0 +1,11 @@
+Metadata-Version: 1.0
+Name: bpr-knn
+Version: 0.0.1
+Summary: Bayesian Personalised Ranking with adaptive KNN
+Home-page: https://github.com/JingzheSun/Recommender_System_Adaptive_KNN
+Author: Sun
+Author-email: jis252@eng.ucsd.edu
+License: MIT
+Description-Content-Type: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
