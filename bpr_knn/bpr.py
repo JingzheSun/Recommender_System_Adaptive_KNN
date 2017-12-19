@@ -1,3 +1,11 @@
+import random
+from math import exp
+from math import log
+from collections import defaultdict
+import numpy as np
+import time
+import sys
+
 class KNN(object):
 
     def __init__(self, numUsers, numItems, lamI = 6e-2, lamJ = 6e-3, learningRate = 0.1):
