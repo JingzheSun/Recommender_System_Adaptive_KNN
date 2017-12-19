@@ -1,0 +1,15 @@
+from setuptools import setup
+
+setup(
+    name='bpr-knn',
+    version='0.0.1',
+    description='Bayesian Personalised Ranking with adaptive KNN',
+    author='Sun',
+    author_email='jis252@eng.ucsd.edu',
+    url='https://github.com/JingzheSun/Recommender_System_Adaptive_KNN',
+    license='MIT',
+    packages=['bpr_knn'],
+    install_requires=[
+        'numpy',
+    ],
+)
