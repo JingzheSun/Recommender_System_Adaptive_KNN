@@ -10,6 +10,6 @@ setup(
     license='Free',
     packages=['bpr_knn'],
     install_requires=[
-        'numpy',
+        'numpy'
     ],
 )
