@@ -1,3 +1,3 @@
-from bpr import BPR
+from bpr import KNN
 
-__all__ = [ BPR ]
+__all__ = [ KNN ]
