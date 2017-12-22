@@ -1,5 +1,4 @@
-# Recommender_System_Adaptive_KNN
-
+Recommender_System_Adaptive_KNN
 ===
 bpr-knn is a collaberative filter recommender.
 
