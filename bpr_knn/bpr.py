@@ -132,7 +132,7 @@ class KNN(object):
 
     def prediction(self, u, i):
         
-        scores = self.predictions(u)
+        scores = self.predictionsAll(u)
         return scores[i] > sorted(scores)[self._numItem*0.8]
 
     def _dataPretreatment(self, data):
