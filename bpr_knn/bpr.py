@@ -117,7 +117,7 @@ class KNN(object):
 
     def predictionsKNN(self, K, u):
         #slow
-        if K >= self._Iu[u]:
+        if K >= len(self._Iu[u]):
             res = np.sum([self.C[:,l] for l in self._Iu[u]], 0)
         else:
             res = []
